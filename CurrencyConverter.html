@@ -54,7 +54,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
         }
         
@@ -277,6 +277,28 @@
                 grid-template-columns: repeat(2, 1fr);
             }
             
+            .title-row
+            {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .title-row h2
+            {
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+
+            .title-row .btn,
+            .title-row .btn-toggle,
+            .title-row label.btn-toggle
+            {
+                width: 100%;
+                box-sizing: border-box;
+                text-align: center;
+            }
+            
             #exchangeTable
             {
                 border: 0 !important;
@@ -303,8 +325,9 @@
                 margin-bottom: 20px !important;
                 border: 2px solid #34495e !important;
                 border-radius: 8px !important;
-                padding: 10px !important;
+                padding: 15px !important;
                 background-color: #fff !important;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             }
             
             #exchangeTable td
@@ -314,7 +337,7 @@
                 align-items: center !important;
                 border: none !important;
                 border-bottom: 1px solid #eee !important;
-                padding: 12px 5px !important;
+                padding: 10px 0 !important;
                 text-align: right !important;
             }
             
