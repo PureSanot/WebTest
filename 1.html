@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>외화 분할 매수 및 손익 계산기</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        h1, h2 { color: #2c3e50; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .rate-board { display: flex; gap: 15px; flex-wrap: wrap; }
+        .rate-card { flex: 1; min-width: 140px; background: #eef2f5; padding: 15px; border-radius: 6px; text-align: center; }
+        .rate-card .currency { font-weight: bold; color: #555; }
+        .rate-card input { width: 90%; text-align: center; font-size: 1.1em; font-weight: bold; color: #d9534f; margin-top: 5px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 0.95em; }
+        th { background-color: #34495e; color: white; }
+        input, select { width: 95%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; text-align: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add { background-color: #27ae60; color: white; }
+        .btn-calc { background-color: #2980b9; color: white; width: 100%; padding: 12px; font-size: 1.1em; margin-top: 15px; }
+        .btn-danger { background-color: #e74c3c; color: white; padding: 4px 8px; }
+        .btn-action { background-color: #8e44ad; color: white; margin-right: 5px; }
+        .summary-box { background: #e8f8f5; border-left: 5px solid #1abc9c; padding: 15px; margin-top: 15px; line-height: 1.6; }
+        .loss-text { color: #c0392b; font-weight: bold; }
+        .gain-text { color: #27ae60; font-weight: bold; }
+        .status-msg { font-size: 0.85em; color: #666; margin-top: 5px; display: inline-block; }
+        .notice { font-size: 0.85em; color: #e67e22; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>외화 분할 매수 손익 계산기</h1>
+
+    <div class="card">
+        <h2>오늘 기준 실시간 환율 (원화 ₩)</h2>
+        <p class="notice">※ 은행 앱의 현재 고시환율과 다르다면 숫자를 직접 수정하세요.</p>
+        <div class="rate-board">
+            <div class="rate-card">
+                <div class="currency">미국 (USD)</div>
+                <input type="number" id="rate-USD" value="1350" step="0.1">
+            </div>
+            <div class="rate-card">
+                <div class="currency">일본 (JPY 100엔)</div>
+                <input type="number" id="rate-JPY" value="900" step="0.1">
+            </div>
+            <div class="rate-card">
+                <div class="currency">유럽 (EUR)</div>
+                <input type="number" id="rate-EUR" value="1450" step="0.1">
+            </div>
+            <div class="rate-card">
+                <div class="currency">중국 (CNY)</div>
+                <input type="number" id="rate-CNY" value="185" step="0.1">
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <button class="btn btn-action" onclick="fetchTodayRates()">오늘 환율 새로고침</button>
+            <span class="status-msg" id="api-status"></span>
+        </div>
+    </div>
+
+    <div class="card">
+        <button class="btn btn-action" onclick="exportData()">데이터 내보내기(JSON)</button>
+        <button class="btn btn-action" onclick="document.getElementById('fileInput').click()">데이터 불러오기</button>
+        <button class="btn btn-action" onclick="shareLink()">결과 링크 복사(카톡 공유)</button>
+        <input type="file" id="fileInput" style="display: none;" onchange="importData(event)">
+    </div>
+
+    <div class="card">
+        <h2>환전 내역 리스트</h2>
+        <p class="notice">※ <b>날짜를 선택하면 그날의 종가(기준환율)를 자동으로 불러옵니다.</b> 이후 본인의 실제 환전 영수증에 맞게 환율 숫자를 덮어쓰세요!</p>
+        <table id="exchangeTable">
+            <thead>
+                <tr>
+                    <th style="width: 16%;">날짜</th>
+                    <th style="width: 12%;">통화</th>
+                    <th style="width: 15%;">매수 환율 (₩)</th>
+                    <th style="width: 15%;">투입 금액 (₩)</th>
+                    <th style="width: 12%;">환전된 외화</th>
+                    <th style="width: 12%;">현재 가치 (₩)</th>
+                    <th style="width: 11%;">손익 (₩)</th>
+                    <th style="width: 7%;">삭제</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+
+        <div style="margin-top: 10px;">
+            <button class="btn btn-add" onclick="addRow()">+ 행 추가</button>
+        </div>
+
+        <button class="btn btn-calc" onclick="calculateAll()">전체 손익 및 기회비용 계산하기</button>
+    </div>
+
+    <div class="card">
+        <h2>분석 결과 리포트</h2>
+        <div class="summary-box" id="summaryResult">
+            환전 내역을 입력하고 계산하기 버튼을 눌러주세요.
+        </div>
+    </div>
+
+    <script>
+        // 1. 오늘 환율 (ER-API)
+        async function fetchTodayRates() {
+            const statusElem = document.getElementById('api-status');
+            statusElem.innerText = "환율 업데이트 중...";
+            try {
+                const response = await fetch('https://open.er-api.com/v6/latest/USD');
+                if (!response.ok) throw new Error('API 오류');
+                const data = await response.json();
+                
+                const krwPerUsd = data.rates.KRW;
+                document.getElementById('rate-USD').value = krwPerUsd.toFixed(2);
+                document.getElementById('rate-JPY').value = ((krwPerUsd / data.rates.JPY) * 100).toFixed(2);
+                document.getElementById('rate-EUR').value = (krwPerUsd / data.rates.EUR).toFixed(2);
+                document.getElementById('rate-CNY').value = (krwPerUsd / data.rates.CNY).toFixed(2);
+
+                statusElem.innerText = "✓ 최신 환율 업데이트 완료";
+                statusElem.style.color = "green";
+            } catch (error) {
+                statusElem.innerText = "⚠ 자동수집 실패 (직접 입력해주세요)";
+                statusElem.style.color = "red";
+            }
+        }
+
+        // 2. 날짜 변경 시 과거 환율 자동 수집 (보다 빠르고 강력한 CDN API로 교체)
+        async function fetchHistoricalRate(elem) {
+            const row = elem.closest('tr');
+            const dateVal = row.querySelector('.row-date').value;
+            const currency = row.querySelector('.currency-select').value.toLowerCase();
+            const rateInput = row.querySelector('.buy-rate');
+
+            if (!dateVal) return;
+
+            // 오늘 날짜이거나 미래면 상단의 오늘 환율을 복사
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (dateVal >= todayStr) {
+                rateInput.value = document.getElementById('rate-' + currency.toUpperCase()).value;
+                updateForeignAmount(rateInput);
+                return;
+            }
+
+            rateInput.placeholder = "조회 중...";
+            rateInput.value = ""; // 조회 중임을 알리기 위해 기존 값 비우기
+
+            try {
+                // 주말 상관없이 가장 안정적인 과거 종가 데이터 제공 API
+                const response = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${dateVal}/v1/currencies/${currency}.json`);
+                if (!response.ok) throw new Error('데이터 없음');
+                const data = await response.json();
+
+                let rate = data[currency].krw;
+                if (currency === 'jpy') rate = rate * 100; // 엔화는 100엔 기준 변환
+
+                rateInput.value = rate.toFixed(2);
+                rateInput.placeholder = "직접 수정 가능";
+                
+                updateForeignAmount(rateInput);
+            } catch (error) {
+                console.warn('과거 환율 수집 실패:', error);
+                rateInput.placeholder = "실패 (직접입력)";
+            }
+        }
+
+        function addRow(data = {}) {
+            const tbody = document.getElementById('tableBody');
+            const row = document.createElement('tr');
+            const today = new Date().toISOString().split('T')[0];
+
+            row.innerHTML = `
+                <td><input type="date" class="row-date" value="${data.date || today}" onchange="fetchHistoricalRate(this)"></td>
+                <td>
+                    <select class="currency-select" onchange="fetchHistoricalRate(this)">
+                        <option value="JPY" ${data.currency === 'JPY' ? 'selected' : ''}>JPY (엔)</option>
+                        <option value="USD" ${data.currency === 'USD' ? 'selected' : ''}>USD (달러)</option>
+                        <option value="EUR" ${data.currency === 'EUR' ? 'selected' : ''}>EUR (유로)</option>
+                        <option value="CNY" ${data.currency === 'CNY' ? 'selected' : ''}>CNY (위안)</option>
+                    </select>
+                </td>
+                <td><input type="number" class="buy-rate" placeholder="입력 대기" value="${data.buyRate || ''}" oninput="updateForeignAmount(this)"></td>
+                <td><input type="number" class="amount-krw" placeholder="예: 200000" value="${data.amountKrw || ''}" oninput="updateForeignAmount(this)"></td>
+                <td class="amount-foreign">-</td>
+                <td class="current-val">-</td>
+                <td class="profit-loss">-</td>
+                <td><button class="btn btn-danger" onclick="deleteRow(this)">삭제</button></td>
+            `;
+            tbody.appendChild(row);
+
+            // 초기 로드 시 값 없으면 자동 조회
+            if (!data.buyRate) fetchHistoricalRate(row.querySelector('.row-date'));
+        }
+
+        function deleteRow(btn) {
+            btn.closest('tr').remove();
+        }
+
+        function updateForeignAmount(elem) {
+            const row = elem.closest('tr');
+            const currency = row.querySelector('.currency-select').value;
+            const buyRate = parseFloat(row.querySelector('.buy-rate').value);
+            const amountKrw = parseFloat(row.querySelector('.amount-krw').value);
+            const foreignCell = row.querySelector('.amount-foreign');
+
+            if (buyRate > 0 && amountKrw > 0) {
+                let foreignVal = (currency === 'JPY') ? (amountKrw / buyRate) * 100 : amountKrw / buyRate;
+                foreignCell.innerText = foreignVal.toFixed(2);
+            } else {
+                foreignCell.innerText = '-';
+            }
+        }
+
+        function calculateAll() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            const currentRates = {
+                USD: parseFloat(document.getElementById('rate-USD').value) || 0,
+                JPY: parseFloat(document.getElementById('rate-JPY').value) || 0,
+                EUR: parseFloat(document.getElementById('rate-EUR').value) || 0,
+                CNY: parseFloat(document.getElementById('rate-CNY').value) || 0
+            };
+
+            let totalSpentKRW = 0;
+            let totalCurrentValKRW = 0;
+            let summaryByCurrency = {};
+
+            rows.forEach(row => {
+                const currency = row.querySelector('.currency-select').value;
+                const buyRate = parseFloat(row.querySelector('.buy-rate').value);
+                const amountKrw = parseFloat(row.querySelector('.amount-krw').value);
+
+                if (!buyRate || !amountKrw) return;
+
+                let foreignAmount = (currency === 'JPY') ? (amountKrw / buyRate) * 100 : amountKrw / buyRate;
+                const currentRate = currentRates[currency];
+                let currentValKRW = (currency === 'JPY') ? (foreignAmount / 100) * currentRate : foreignAmount * currentRate;
+
+                const profitLossKRW = currentValKRW - amountKrw;
+
+                row.querySelector('.amount-foreign').innerText = foreignAmount.toLocaleString(undefined, {maximumFractionDigits: 2});
+                row.querySelector('.current-val').innerText = Math.round(currentValKRW).toLocaleString();
+
+                const plCell = row.querySelector('.profit-loss');
+                plCell.innerText = Math.round(profitLossKRW).toLocaleString();
+                plCell.className = profitLossKRW >= 0 ? 'gain-text' : 'loss-text';
+
+                totalSpentKRW += amountKrw;
+                totalCurrentValKRW += currentValKRW;
+
+                if (!summaryByCurrency[currency]) summaryByCurrency[currency] = { spentKrw: 0, foreign: 0 };
+                summaryByCurrency[currency].spentKrw += amountKrw;
+                summaryByCurrency[currency].foreign += foreignAmount;
+            });
+
+            const totalPL = totalCurrentValKRW - totalSpentKRW;
+            let htmlReport = `<h3>총 평가 요약</h3>`;
+            htmlReport += `<p>총 투입 원화: <strong>${Math.round(totalSpentKRW).toLocaleString()}원</strong></p>`;
+            htmlReport += `<p>현재 평가 가치: <strong>${Math.round(totalCurrentValKRW).toLocaleString()}원</strong></p>`;
+            htmlReport += `<p>최종 누적 손익: <span class="${totalPL >= 0 ? 'gain-text' : 'loss-text'}">${Math.round(totalPL).toLocaleString()}원</span></p>`;
+
+            htmlReport += `<hr><h3>기회비용 분석 (만약 오늘 한 번에 샀다면?)</h3>`;
+
+            for (const [curr, data] of Object.entries(summaryByCurrency)) {
+                const todayRate = currentRates[curr];
+                let costTodayKRW = (curr === 'JPY') ? (data.foreign / 100) * todayRate : data.foreign * todayRate;
+                const diff = data.spentKrw - costTodayKRW;
+
+                htmlReport += `<p><strong>[${curr}]</strong> 누적 외화: ${data.foreign.toFixed(2)} | 실제 투입 원화: ${Math.round(data.spentKrw).toLocaleString()}원</p>`;
+                if (diff > 0) {
+                    htmlReport += `<p class="loss-text">➥ 과거에 나눠 사지 않고 오늘(₩${todayRate}) 샀다면 <strong>${Math.round(diff).toLocaleString()}원</strong>을 더 아낄 수 있었습니다.</p>`;
+                } else if (diff < 0) {
+                    htmlReport += `<p class="gain-text">➥ 오늘 환율이 올라서 과거에 미리 사둔 덕분에 <strong>${Math.round(Math.abs(diff)).toLocaleString()}원</strong> 이득입니다!</p>`;
+                } else {
+                    htmlReport += `<p>➥ 평균 매수 단가와 오늘 환율이 동일합니다.</p>`;
+                }
+            }
+
+            document.getElementById('summaryResult').innerHTML = htmlReport;
+        }
+
+        function exportData() {
+            const list = getTableData();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(list));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", "exchange_history.json");
+            document.body.appendChild(dl); dl.click(); dl.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const list = JSON.parse(e.target.result);
+                    document.getElementById('tableBody').innerHTML = '';
+                    list.forEach(item => addRow(item));
+                } catch { alert('파일 형식이 잘못되었습니다.'); }
+            };
+            reader.readAsText(file);
+        }
+
+        function shareLink() {
+            const list = getTableData();
+            const encodedData = btoa(encodeURIComponent(JSON.stringify(list)));
+            const shareUrl = window.location.origin + window.location.pathname + '?data=' + encodedData;
+            navigator.clipboard.writeText(shareUrl).then(() => alert('데이터가 포함된 접속 링크가 복사되었습니다! 카톡 등에 붙여넣기 하세요.'));
+        }
+
+        function getTableData() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            const list = [];
+            rows.forEach(row => {
+                list.push({
+                    date: row.querySelector('.row-date').value,
+                    currency: row.querySelector('.currency-select').value,
+                    buyRate: row.querySelector('.buy-rate').value,
+                    amountKrw: row.querySelector('.amount-krw').value
+                });
+            });
+            return list;
+        }
+
+        function loadSharedData() {
+            const dataParam = new URLSearchParams(window.location.search).get('data');
+            if (dataParam) {
+                try {
+                    const list = JSON.parse(decodeURIComponent(atob(dataParam)));
+                    document.getElementById('tableBody').innerHTML = '';
+                    list.forEach(item => addRow(item));
+                    return true;
+                } catch {}
+            }
+            return false;
+        }
+
+        window.onload = async function() {
+            await fetchTodayRates();
+            if (!loadSharedData()) {
+                for (let i = 0; i < 3; i++) addRow();
+            }
+        };
+    </script>
+</body>
+</html>
