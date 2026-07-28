@@ -127,6 +127,14 @@
             box-sizing: border-box;
         }
         
+        @media (max-width: 768px)
+        {
+            .rate-board
+            {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
         table
         {
             width: 100%;
@@ -269,70 +277,6 @@
             color: #d35400;
             margin: 0 0 10px 0;
         }
-
-        @media (max-width: 768px)
-        {
-            .rate-board
-            {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            #exchangeTable thead
-            {
-                display: none;
-            }
-            
-            #exchangeTable, #exchangeTable tbody, #exchangeTable tr, #exchangeTable td
-            {
-                display: block;
-                width: 100%;
-            }
-            
-            #exchangeTable tr
-            {
-                margin-bottom: 20px;
-                border: 2px solid #34495e;
-                border-radius: 8px;
-                padding: 10px;
-                background-color: #fff;
-            }
-            
-            #exchangeTable td
-            {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border: none;
-                border-bottom: 1px solid #eee;
-                padding: 12px 5px;
-                text-align: right;
-            }
-            
-            #exchangeTable td:last-child
-            {
-                border-bottom: none;
-            }
-            
-            #exchangeTable td::before
-            {
-                content: attr(data-label);
-                font-weight: 600;
-                text-align: left;
-                flex-basis: 40%;
-                color: #2c3e50;
-                font-size: 0.9em;
-            }
-            
-            #exchangeTable td input, #exchangeTable td select
-            {
-                width: 55%;
-            }
-            
-            #exchangeTable td .btn-danger
-            {
-                width: 55%;
-            }
-        }
     </style>
 </head>
 <body>
@@ -431,15 +375,6 @@
     <script>
         let globalTodayRates = {}; 
         let currentDefaultCurrency = localStorage.getItem('defaultCurrency') || 'JPY';
-
-        function roundForeignAmount(value, currency)
-        {
-            if (currency === 'JPY' || currency === 'VND')
-            {
-                return Math.round(value);
-            }
-            return Math.round((value + Number.EPSILON) * 100) / 100;
-        }
 
         function setDefaultCurrency(curr)
         {
@@ -564,8 +499,8 @@
             const c = data.currency || currentDefaultCurrency; 
 
             row.innerHTML = `
-                <td data-label="날짜"><input type="date" class="row-date" value="${data.date || today}" onchange="fetchHistoricalRate(this)"></td>
-                <td data-label="통화">
+                <td><input type="date" class="row-date" value="${data.date || today}" onchange="fetchHistoricalRate(this)"></td>
+                <td>
                     <select class="currency-select" onchange="fetchHistoricalRate(this)">
                         <option value="JPY" ${c === 'JPY' ? 'selected' : ''}>JPY (일본 100엔)</option>
                         <option value="USD" ${c === 'USD' ? 'selected' : ''}>USD (미국 달러)</option>
@@ -577,12 +512,12 @@
                         <option value="PHP" ${c === 'PHP' ? 'selected' : ''}>PHP (필리핀 페소)</option>
                     </select>
                 </td>
-                <td data-label="매수 환율 (₩)"><input type="number" class="buy-rate" placeholder="입력 대기" value="${data.buyRate || ''}" oninput="updateForeignAmount(this)"></td>
-                <td data-label="투입 금액 (₩)"><input type="number" class="amount-krw" placeholder="예: 200000" value="${data.amountKrw || ''}" oninput="updateForeignAmount(this)"></td>
-                <td data-label="환전된 외화" class="amount-foreign">-</td>
-                <td data-label="현재 가치 (₩)" class="current-val">-</td>
-                <td data-label="손익 (₩)" class="profit-loss">-</td>
-                <td data-label="삭제"><button class="btn btn-danger" onclick="deleteRow(this)">삭제</button></td>
+                <td><input type="number" class="buy-rate" placeholder="입력 대기" value="${data.buyRate || ''}" oninput="updateForeignAmount(this)"></td>
+                <td><input type="number" class="amount-krw" placeholder="예: 200000" value="${data.amountKrw || ''}" oninput="updateForeignAmount(this)"></td>
+                <td class="amount-foreign">-</td>
+                <td class="current-val">-</td>
+                <td class="profit-loss">-</td>
+                <td><button class="btn btn-danger" onclick="deleteRow(this)">삭제</button></td>
             `;
             tbody.appendChild(row);
 
@@ -624,16 +559,8 @@
                 }
                 else
                 {
-                    let roundedForeign = roundForeignAmount(rawForeign, currency);
-                    
-                    if (currency === 'JPY' || currency === 'VND')
-                    {
-                        foreignCell.innerText = roundedForeign.toLocaleString();
-                    }
-                    else
-                    {
-                        foreignCell.innerText = roundedForeign.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    }
+                    let roundedForeign = Math.round(rawForeign);
+                    foreignCell.innerText = roundedForeign.toLocaleString();
                 }
             }
             else
@@ -697,15 +624,17 @@
                 let rawForeign = amountKrw / unitRate;
                 
                 let foreignAmount = 0;
-                let actualSpentKrw = Math.round(amountKrw); 
+                let actualSpentKrw = 0;
                 
                 if (isShowDecimal)
                 {
                     foreignAmount = rawForeign;
+                    actualSpentKrw = amountKrw;
                 }
                 else
                 {
-                    foreignAmount = roundForeignAmount(rawForeign, currency);
+                    foreignAmount = Math.round(rawForeign);
+                    actualSpentKrw = Math.round(foreignAmount * unitRate);
                 }
                 
                 const currentRate = getLiveRate(currency); 
@@ -720,14 +649,7 @@
                 }
                 else
                 {
-                    if (currency === 'JPY' || currency === 'VND')
-                    {
-                        row.querySelector('.amount-foreign').innerText = foreignAmount.toLocaleString();
-                    }
-                    else
-                    {
-                        row.querySelector('.amount-foreign').innerText = foreignAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    }
+                    row.querySelector('.amount-foreign').innerText = foreignAmount.toLocaleString();
                 }
                 
                 row.querySelector('.current-val').innerText = Math.round(currentValKRW).toLocaleString();
@@ -762,22 +684,7 @@
                 let costTodayKRW = data.foreign * todayUnitRate;
                 const diff = data.spentKrw - costTodayKRW;
                 
-                let displayForeign = "";
-                if (isShowDecimal)
-                {
-                    displayForeign = data.foreign.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                }
-                else
-                {
-                    if (curr === 'JPY' || curr === 'VND')
-                    {
-                        displayForeign = data.foreign.toLocaleString();
-                    }
-                    else
-                    {
-                        displayForeign = data.foreign.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    }
-                }
+                let displayForeign = isShowDecimal ? data.foreign.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : data.foreign.toLocaleString();
 
                 htmlReport += `<p style="background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">[${curr}] 누적 외화: ${displayForeign} | 실제 투입 원화: ${Math.round(data.spentKrw).toLocaleString()}원<br>`;
                 if (diff > 0)
@@ -786,7 +693,7 @@
                 }
                 else if (diff < 0)
                 {
-                    htmlReport += `<span class="gain-text">오늘 환율이 올라서 과거에 미리 사둔 덕분에 ${Math.round(Math.abs(diff)).toLocaleString()}원 이득입니다</span></p>`;
+                    htmlReport += `<span class="gain-text">오늘 환율이 올라서 과거에 미리 사둔 덕분에 ${Math.round(Math.abs(diff)).toLocaleString()}원 이득입니다!</span></p>`;
                 }
                 else
                 {
@@ -866,7 +773,7 @@
             const shareUrl = window.location.origin + window.location.pathname + '?data=' + encodedData;
             navigator.clipboard.writeText(shareUrl).then(() => 
             {
-                alert('데이터가 포함된 접속 링크가 복사되었습니다 카톡 등에 붙여넣기 하세요.');
+                alert('데이터가 포함된 접속 링크가 복사되었습니다! 카톡 등에 붙여넣기 하세요.');
             });
         }
 
