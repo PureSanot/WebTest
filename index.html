@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 1. 브라우저 탭에 뜨는 이름 변경 -->
+  <title>환율계산기</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Malgun Gothic', sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 40px 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      margin-bottom: 30px;
+      color: #333;
+    }
+    a.card {
+      display: block;
+      background: white;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      text-decoration: none;
+      color: #333;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+    }
+    a.card .title { font-size: 1.1rem; font-weight: bold; }
+    a.card .sub { font-size: 0.85rem; color: #888; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 2. 메인 화면 제목 변경 -->
+    <h1>💱 환율계산기</h1>
+
+    <!-- 3. 카드 클릭 시 CurrencyConverter.html 로 이동 -->
+    <a class="card" href="CurrencyConverter.html">
+      <div class="title">💴 환율 손익 계산기</div>
+      <div class="sub">실시간 환율 및 손익 계산 실행하기</div>
+    </a>
+
+  </div>
+</body>
+</html>
