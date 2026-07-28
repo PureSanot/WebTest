@@ -270,6 +270,12 @@
             margin: 0 0 10px 0;
         }
 
+        .mobile-calc-container
+        {
+            display: none;
+            margin-top: 15px;
+        }
+
         @media screen and (max-width: 992px)
         {
             .rate-board
@@ -279,6 +285,7 @@
             
             .title-row
             {
+                display: flex;
                 flex-direction: column;
                 align-items: stretch;
                 gap: 8px;
@@ -287,7 +294,25 @@
             .title-row h2
             {
                 margin-right: 0;
-                margin-bottom: 5px;
+                margin-bottom: 2px;
+            }
+
+            .title-row .btn-calc
+            {
+                display: none;
+            }
+
+            .mobile-calc-container
+            {
+                display: block;
+            }
+
+            .mobile-calc-container .btn-calc
+            {
+                width: 100%;
+                padding: 12px;
+                box-sizing: border-box;
+                font-size: 1.05em;
             }
 
             .title-row .btn,
@@ -449,6 +474,11 @@
             <tbody id="tableBody">
             </tbody>
         </table>
+
+        <!-- 모바일 환경에서만 카드 맨 아래에 노출되는 계산 버튼 -->
+        <div class="mobile-calc-container">
+            <button class="btn btn-calc" onclick="calculateAll()">전체 손익 및 기회비용 계산하기</button>
+        </div>
     </div>
 
     <div class="card">
