@@ -276,6 +276,19 @@
             margin-top: 15px;
         }
 
+        .mobile-add-container
+        {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .mobile-row-buttons
+        {
+            display: none;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
         @media screen and (max-width: 992px)
         {
             .rate-board
@@ -297,9 +310,25 @@
                 margin-bottom: 2px;
             }
 
-            .title-row .btn-calc
+            .title-row .btn-calc,
+            .title-row .btn-add,
+            .title-row .btn-reset,
+            .title-row label.btn-toggle
             {
                 display: none;
+            }
+
+            .mobile-add-container
+            {
+                display: block;
+            }
+
+            .mobile-add-container .btn-add
+            {
+                width: 100%;
+                padding: 12px;
+                box-sizing: border-box;
+                font-size: 1.05em;
             }
 
             .mobile-calc-container
@@ -315,11 +344,16 @@
                 font-size: 1.05em;
             }
 
-            .title-row .btn,
-            .title-row .btn-toggle,
-            .title-row label.btn-toggle
+            .mobile-row-buttons
             {
-                width: 100%;
+                display: flex;
+            }
+
+            .mobile-row-buttons .btn-reset,
+            .mobile-row-buttons label.btn-toggle
+            {
+                flex: 1;
+                width: auto;
                 box-sizing: border-box;
                 text-align: center;
             }
@@ -397,7 +431,7 @@
         <div class="top-menu-card">
             <button class="btn btn-action" onclick="exportData()">데이터 내보내기(JSON)</button>
             <button class="btn btn-action" onclick="document.getElementById('fileInput').click()">데이터 불러오기</button>
-            <button class="btn btn-action" onclick="shareLink()">결과 링크 복사(카톡 공유)</button>
+            <button class="btn btn-action" onclick="shareLink()">결과 링크 복사</button>
             <input type="file" id="fileInput" style="display: none;" onchange="importData(event)">
         </div>
     </div>
@@ -475,7 +509,16 @@
             </tbody>
         </table>
 
-        <!-- 모바일 환경에서만 카드 맨 아래에 노출되는 계산 버튼 -->
+        <!-- 모바일 환경 전용 버튼 배치 영역 -->
+        <div class="mobile-row-buttons">
+            <button class="btn btn-reset" onclick="resetData()">전체 초기화</button>
+            <label for="showDecimalToggle" class="btn-toggle">소숫점 보기</label>
+        </div>
+
+        <div class="mobile-add-container">
+            <button class="btn btn-add" onclick="addRow()">+ 행 추가</button>
+        </div>
+
         <div class="mobile-calc-container">
             <button class="btn btn-calc" onclick="calculateAll()">전체 손익 및 기회비용 계산하기</button>
         </div>
