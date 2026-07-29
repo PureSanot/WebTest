@@ -590,9 +590,6 @@
                 const now = new Date();
                 statusElem.innerText = `최신 환율 업데이트 완료 (${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} 기준)`;
                 statusElem.style.color = "#27ae60";
-                
-                // 환율 업데이트 후 자동 재계산 기능 추가
-                calculateAll();
             }
             catch (error)
             {
@@ -785,7 +782,6 @@
             let totalSpentKRW = 0;
             let totalCurrentValKRW = 0;
             let summaryByCurrency = {};
-            let hasValidData = false; // 유효 데이터 확인 변수 선언
             
             const isShowDecimal = document.getElementById('showDecimalToggle').checked;
 
@@ -795,16 +791,10 @@
                 const buyRate = parseFloat(row.querySelector('.buy-rate').value);
                 const amountKrw = parseFloat(row.querySelector('.amount-krw').value);
 
-                // 빈 행일 경우 출력 초기화
                 if (!buyRate || !amountKrw)
                 {
-                    row.querySelector('.current-val').innerText = '-';
-                    row.querySelector('.profit-loss').innerText = '-';
-                    row.querySelector('.profit-loss').className = 'profit-loss';
                     return;
                 }
-                
-                hasValidData = true; // 유효 데이터 등록 처리
 
                 let unitRate = (currency === 'JPY' || currency === 'VND') ? buyRate / 100 : buyRate;
                 let rawForeign = amountKrw / unitRate;
@@ -859,13 +849,6 @@
                 summaryByCurrency[currency].spentKrw += actualSpentKrw;
                 summaryByCurrency[currency].foreign += foreignAmount;
             });
-
-            // 유효 데이터가 없을 경우 기본 안내문 출력
-            if (!hasValidData)
-            {
-                document.getElementById('summaryResult').innerHTML = "환전 내역을 입력하고 계산하기 버튼을 눌러주세요.";
-                return;
-            }
 
             const totalPL = totalCurrentValKRW - totalSpentKRW;
             let htmlReport = `<h3 style="margin-top:0;">총 평가 요약</h3>`;
@@ -937,9 +920,6 @@
         {
             const list = getTableData();
             localStorage.setItem('myExchangeData', JSON.stringify(list));
-            
-            // 데이터 저장 시 자동 재계산 처리 추가
-            calculateAll();
         }
 
         function exportData()
